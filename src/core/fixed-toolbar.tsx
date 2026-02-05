@@ -32,6 +32,10 @@ interface FixedToolbarProps {
     updateActiveFormats: () => void;
     applyTextFormat: (tag: string) => void;
     editorRef: React.RefObject<HTMLDivElement | null>;
+    undo: () => void;
+    redo: () => void;
+    canUndo: boolean;
+    canRedo: boolean;
 }
 
 const FixedToolbar: React.FC<FixedToolbarProps> = ({
@@ -41,6 +45,10 @@ const FixedToolbar: React.FC<FixedToolbarProps> = ({
     updateActiveFormats,
     applyTextFormat,
     editorRef,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
 }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -64,11 +72,17 @@ const FixedToolbar: React.FC<FixedToolbarProps> = ({
     ];
 
     return (
-        <div className="sticky top-0 z-40 w-full bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-center border">
+        <div className="sticky top-0 z-50 w-full bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-center border">
             <div className="flex flex-wrap items-center justify-center gap-1 max-w-7xl mx-auto w-full">
 
                 {/* Undo / Redo */}
-                <EditorHistory getButtonClass={getButtonClass} />
+                <EditorHistory
+                    getButtonClass={getButtonClass}
+                    onUndo={undo}
+                    onRedo={redo}
+                    canUndo={canUndo}
+                    canRedo={canRedo}
+                />
                 <Divider />
 
                 {/* Text Format Dropdown */}

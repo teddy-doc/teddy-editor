@@ -104,7 +104,7 @@ const FloatingToolbar: React.FC<FloatingToolbarProps> = ({
     return (
         <div
             ref={toolbarRef}
-            className="fixed z-50 flex items-center gap-1 p-1 bg-white rounded-lg shadow-lg border border-gray-200 animate-in fade-in zoom-in-95 duration-200"
+            className="fixed z-40 flex items-center gap-1 p-1 bg-white rounded-lg shadow-lg border border-gray-200 animate-in fade-in zoom-in-95 duration-200"
             style={{
                 top: `${position.top}px`,
                 left: `${position.left}px`,

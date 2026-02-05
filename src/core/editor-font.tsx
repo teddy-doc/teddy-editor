@@ -13,6 +13,7 @@ const EditorFont: React.FC<EditorFontProps> = ({
     const [showColorPicker, setShowColorPicker] = useState(false);
     const [showFontFamily, setShowFontFamily] = useState(false);
     const [showFontSize, setShowFontSize] = useState(false);
+    const [customFontSize, setCustomFontSize] = useState("");
 
     const colors = [
         "#000000", "#434343", "#666666", "#999999", "#b7b7b7", "#cccccc", "#d9d9d9", "#efefef", "#f3f3f3", "#ffffff",
@@ -29,12 +30,7 @@ const EditorFont: React.FC<EditorFontProps> = ({
         { name: "Monospace", value: "Courier New, Courier, monospace" },
     ];
 
-    const fontSizes = [
-        { label: "Small", value: "1" },
-        { label: "Normal", value: "3" },
-        { label: "Large", value: "5" },
-        { label: "Huge", value: "7" },
-    ];
+    const fontSizes = [8, 9, 10, 11, 12, 14, 18, 24, 30, 36, 48, 60, 72, 96];
 
     const applyColor = (color: string) => {
         document.execCommand("foreColor", false, color);
@@ -48,10 +44,34 @@ const EditorFont: React.FC<EditorFontProps> = ({
         updateActiveFormats();
     };
 
-    const applyFontSize = (size: string) => {
-        document.execCommand("fontSize", false, size);
+    const applyFontSize = (size: string | number) => {
+        // 1. Apply a temporary font size (7 is rarely used naturally in this context, or use a marker)
+        document.execCommand("fontSize", false, "7");
+
+        // 2. Find all font elements with size="7"
+        const fontElements = document.getElementsByTagName("font");
+
+        // 3. Iterate and replace with span
+        for (let i = fontElements.length - 1; i >= 0; i--) {
+            const fontEl = fontElements[i];
+            if (fontEl.getAttribute("size") === "7") {
+                const span = document.createElement("span");
+                span.style.fontSize = `${size}px`;
+                span.innerHTML = fontEl.innerHTML;
+                fontEl.parentNode?.replaceChild(span, fontEl);
+            }
+        }
+
         setShowFontSize(false);
+        setCustomFontSize("");
         updateActiveFormats();
+    };
+
+    const handleCustomFontSize = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (customFontSize) {
+            applyFontSize(customFontSize);
+        }
     };
 
     return (
@@ -90,7 +110,15 @@ const EditorFont: React.FC<EditorFontProps> = ({
             <div className="relative">
                 <button
                     onClick={() => setShowFontSize(!showFontSize)}
-                    onBlur={() => setTimeout(() => setShowFontSize(false), 200)}
+                    onBlur={() => {
+                        // Delay closing so input click doesn't close it immediately
+                        setTimeout(() => {
+                            // We don't auto close here rely on click outside or selection
+                            // Actually standard blur handling is tricky with input inside
+                            // Let's simplify and just rely on interaction
+                            setShowFontSize(false);
+                        }, 200)
+                    }}
                     className="flex items-center gap-2 px-2 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded min-w-[60px] justify-between transition-colors"
                     title="Font Size"
                 >
@@ -98,17 +126,35 @@ const EditorFont: React.FC<EditorFontProps> = ({
                     <ChevronDown size={14} className="text-gray-500" />
                 </button>
                 {showFontSize && (
-                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[100px]">
+                    <div
+                        className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[100px] max-h-[300px] overflow-y-auto"
+                        onMouseDown={(e) => e.preventDefault()} // Prevent blur on click
+                    >
+                        <div className="p-2 border-b border-gray-100">
+                            <form onSubmit={handleCustomFontSize} className="flex gap-1">
+                                <input
+                                    type="number"
+                                    value={customFontSize}
+                                    onChange={(e) => setCustomFontSize(e.target.value)}
+                                    placeholder="px"
+                                    className="w-12 text-sm border border-gray-300 rounded px-1"
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                />
+                                <button type="submit" className="text-xs bg-blue-50 text-blue-600 px-1 rounded">
+                                    Go
+                                </button>
+                            </form>
+                        </div>
                         {fontSizes.map((size) => (
                             <button
-                                key={size.label}
+                                key={size}
                                 onMouseDown={(e) => {
                                     e.preventDefault();
-                                    applyFontSize(size.value);
+                                    applyFontSize(size);
                                 }}
-                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700"
+                                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-gray-700 hover:text-blue-600"
                             >
-                                {size.label}
+                                {size}
                             </button>
                         ))}
                     </div>

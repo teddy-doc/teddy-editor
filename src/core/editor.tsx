@@ -2,6 +2,9 @@ import React, { useRef, useState, useEffect } from "react";
 import FloatingToolbar from "./floating-toolbar";
 import FixedToolbar from "./fixed-toolbar";
 import DOMPurify from "dompurify";
+import { useHistory } from "../hooks/use-history";
+import RulerTop from "./ruler-top";
+import RulerLeft from "./ruler-left";
 
 interface EditorProps {
   content?: string;
@@ -45,7 +48,27 @@ const Editor: React.FC<EditorProps> = ({
     numberedList: false,
   });
   const [currentTextFormat, setCurrentTextFormat] = useState("p");
-  // const [htmlContent, setHtmlContent] = useState(content);
+
+  // Custom History Hook
+  const { pushState, undo, redo, canUndo, canRedo } = useHistory(content);
+
+  const performUndo = () => {
+    const previousHtml = undo();
+    if (previousHtml !== null && editorRef.current) {
+      editorRef.current.innerHTML = previousHtml;
+      if (onChange) onChange(previousHtml);
+      updateActiveFormats();
+    }
+  };
+
+  const performRedo = () => {
+    const nextHtml = redo();
+    if (nextHtml !== null && editorRef.current) {
+      editorRef.current.innerHTML = nextHtml;
+      if (onChange) onChange(nextHtml);
+      updateActiveFormats();
+    }
+  };
 
   const applyTextFormat = (tagName: string) => {
     const selection = window.getSelection();
@@ -131,6 +154,11 @@ const Editor: React.FC<EditorProps> = ({
       setCurrentTextFormat(tagName);
     }
 
+    // Capture history immediately for format changes
+    if (editorRef.current) {
+      pushState(editorRef.current.innerHTML, true);
+    }
+
     // Update active formats after a short delay
     setTimeout(() => updateActiveFormats(), 10);
   };
@@ -139,6 +167,7 @@ const Editor: React.FC<EditorProps> = ({
     if (editorRef.current && onChange) {
       const currentContent = editorRef.current.innerHTML;
       onChange(currentContent);
+      pushState(currentContent);
     }
   };
 
@@ -296,7 +325,7 @@ const Editor: React.FC<EditorProps> = ({
   }, []);
 
   return (
-    <div className="teddy-editor w-full min-h-screen bg-gray-100 flex flex-col items-center pb-8 relative">
+    <div className="teddy-editor w-full h-screen bg-gray-100 flex flex-col overflow-hidden">
       {/* Fixed Top Toolbar */}
       <FixedToolbar
         config={config}
@@ -305,7 +334,43 @@ const Editor: React.FC<EditorProps> = ({
         updateActiveFormats={updateActiveFormats}
         applyTextFormat={applyTextFormat}
         editorRef={editorRef}
+        undo={performUndo}
+        redo={performRedo}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
+
+      {/* Main Content Area with Rulers */}
+      <div className="flex-1 overflow-auto flex justify-center p-4 relative">
+        <div className="flex flex-col gap-1 w-full max-w-4xl">
+          {/* Top Ruler */}
+          <div className="pl-6 select-none bg-gray-100 sticky top-0 z-10 pt-2">
+            <RulerTop />
+          </div>
+
+          <div className="flex">
+            {/* Left Ruler */}
+            <div className="pr-1 select-none pt-8 hidden sm:block h-full">
+              <RulerLeft />
+            </div>
+
+            {/* Editor Page */}
+            <div
+              ref={editorRef}
+              contentEditable
+              className="document-page outline-none focus:ring-0 prose prose-headings:mt-4 prose-headings:mb-2 w-full bg-white shadow-sm p-8 min-h-[1000px]"
+              style={{
+                whiteSpace: "pre-wrap",
+              }}
+              onMouseUp={updateActiveFormats}
+              onKeyUp={updateActiveFormats}
+              onInput={handleContentChange}
+              onBlur={handleBlur}
+              onFocus={handleFocus}
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Floating Toolbar (appears on selection) */}
       <FloatingToolbar
@@ -314,22 +379,6 @@ const Editor: React.FC<EditorProps> = ({
         currentTextFormat={currentTextFormat}
         updateActiveFormats={updateActiveFormats}
         applyTextFormat={applyTextFormat}
-      />
-
-      {/* Editor Page */}
-      <div
-        ref={editorRef}
-        contentEditable
-        className="document-page outline-none focus:ring-0 prose prose-headings:mt-4 prose-headings:mb-2 max-w-4xl mx-auto mt-8"
-        style={{
-          whiteSpace: "pre-wrap",
-          minHeight: "1000px" // Ensure visual resemblance to A4
-        }}
-        onMouseUp={updateActiveFormats}
-        onKeyUp={updateActiveFormats}
-        onInput={handleContentChange}
-        onBlur={handleBlur}
-        onFocus={handleFocus}
       />
     </div>
   );
