@@ -7,8 +7,18 @@ function TeddyEditor() {
       <Editor
         content="<p>Initial content</p>"
         onChange={(content) => console.log("Content changed:", content)}
-        onBlur={(content) => console.log("Editor lost focus", content)}
-        onFocus={() => console.log("Editor gained focus")}
+        onBlur={(editor) => console.log("Editor lost focus. Content:", editor.getContent())}
+        onFocus={(editor) => {
+          console.log("Editor gained focus");
+          console.log("Current content:", editor.getContent());
+        }}
+        onReady={(editor) => {
+          console.log("Editor is ready!");
+          // Example: Set default content if empty
+          if (!editor.getContent()) {
+            editor.setContent("<p>Start typing...</p>");
+          }
+        }}
       />
     </div>
   );

@@ -6,11 +6,19 @@ import { useHistory } from "../hooks/use-history";
 import RulerTop from "./ruler-top";
 import RulerLeft from "./ruler-left";
 
+
+export interface TeddyEditorInstance {
+  getContent: () => string;
+  setContent: (content: string) => void;
+  // Future extension points
+}
+
 interface EditorProps {
   content?: string;
-  onChange?: (content: string) => void;
-  onBlur?: (content: string) => void;
-  onFocus?: () => void;
+  onChange?: (content: string, editor: TeddyEditorInstance) => void;
+  onBlur?: (editor: TeddyEditorInstance) => void;
+  onFocus?: (editor: TeddyEditorInstance) => void;
+  onReady?: (editor: TeddyEditorInstance) => void;
   config?: {
     showTextFormat?: boolean;
     showInlineFormat?: boolean;
@@ -26,6 +34,7 @@ const Editor: React.FC<EditorProps> = ({
   onChange,
   onBlur,
   onFocus,
+  onReady,
   config = {
     showTextFormat: true,
     showInlineFormat: true,
@@ -59,11 +68,36 @@ const Editor: React.FC<EditorProps> = ({
   // Custom History Hook
   const { pushState, undo, redo, canUndo, canRedo } = useHistory(content);
 
+  // Editor Instance Creation
+  const createEditorInstance = (): TeddyEditorInstance => ({
+    getContent: () => editorRef.current?.innerHTML || "",
+    setContent: (newContent: string) => {
+      if (editorRef.current) {
+        editorRef.current.innerHTML = newContent;
+        // Also trigger change to sync state/history if needed? 
+        // Typically setContent might be programmatic, so maybe not trigger onChange loop, 
+        // but updating history is probably good.
+        pushState(newContent);
+        // Manual updates should probably trigger onChange if we want to be consistent,
+        // but often programmatic setting avoids it. Let's stick to safe defaults.
+        if (onChange) onChange(newContent, createEditorInstance());
+      }
+    },
+  });
+
+  // Memoize instance to avoid re-creation on every render if possible, 
+  // but getContent relies on current ref. 
+  // Since it's a function, it's fine. 
+  // We can't easily memoize the *return value* of getContent, but the instance object itself could be stable.
+  // However, props onBlur etc might depend on closure. 
+  // Let's create a stable object if we want `editor === editor` to be true.
+  // But for now, simple object creation in callbacks is safer to capture latest state/refs types.
+
   const performUndo = () => {
     const previousHtml = undo();
     if (previousHtml !== null && editorRef.current) {
       editorRef.current.innerHTML = previousHtml;
-      if (onChange) onChange(previousHtml);
+      if (onChange) onChange(previousHtml, createEditorInstance());
       updateActiveFormats();
     }
   };
@@ -72,7 +106,7 @@ const Editor: React.FC<EditorProps> = ({
     const nextHtml = redo();
     if (nextHtml !== null && editorRef.current) {
       editorRef.current.innerHTML = nextHtml;
-      if (onChange) onChange(nextHtml);
+      if (onChange) onChange(nextHtml, createEditorInstance());
       updateActiveFormats();
     }
   };
@@ -173,25 +207,29 @@ const Editor: React.FC<EditorProps> = ({
   const handleContentChange = () => {
     if (editorRef.current && onChange) {
       const currentContent = editorRef.current.innerHTML;
-      onChange(currentContent);
+      onChange(currentContent, createEditorInstance());
       pushState(currentContent);
     }
   };
 
   const handleBlur = () => {
     if (onBlur) {
-      if (editorRef.current) {
-        const newContent = editorRef.current.innerHTML;
-        onBlur(newContent);
-      }
+      onBlur(createEditorInstance());
     }
   };
 
   const handleFocus = () => {
     if (onFocus) {
-      onFocus();
+      onFocus(createEditorInstance());
     }
   };
+
+  // Trigger onReady when component mounts
+  useEffect(() => {
+    if (onReady) {
+      onReady(createEditorInstance());
+    }
+  }, []);
 
   // Initialize content when component mounts or content prop changes
   useEffect(() => {

@@ -37,8 +37,11 @@ function App() {
       <TeddyEditor
         content="<p>Initial content</p>"
         onChange={(content) => console.log("Content changed:", content)}
-        onBlur={(content) => console.log("Editor lost focus:", content)}
-        onFocus={() => console.log("Editor focused")}
+        onBlur={(editor) =>
+          console.log("Editor lost focus:", editor.getContent())
+        }
+        onFocus={(editor) => console.log("Editor focused")}
+        onReady={(editor) => console.log("Editor ready")}
         config={{
           showTextFormat: true,
           showInlineFormat: false,
@@ -57,19 +60,20 @@ function App() {
 
 ## 🧩 Props
 
-| Prop                  | Type                        | Description                                     |
-| --------------------- | --------------------------- | ----------------------------------------------- |
-| `content`             | `string`                    | Initial HTML content (optional)                 |
-| `onChange`            | `(content: string) => void` | Callback when content changes                   |
-| `onBlur`              | `(content: string) => void` | Callback when editor loses focus                |
-| `onFocus`             | `() => void`                | Callback when editor gains focus                |
-| `config`              | `object`                    | Optional toolbar configuration                  |
-| ├─ `showTextFormat`   | `boolean`                   | Show bold/italic/underline menu                 |
-| ├─ `showInlineFormat` | `boolean`                   | Show inline format options (sub/sup/etc)        |
-| ├─ `showAlignment`    | `boolean`                   | Show alignment controls (left/center/right)     |
-| ├─ `showList`         | `boolean`                   | Show bullet and numbered list                   |
-| ├─ `showInsert`       | `boolean`                   | Show insert menu (image, link, video, equation) |
-| └─ `showCodeView`     | `boolean`                   | Enable raw HTML/code view toggle                |
+| Prop                  | Type                                        | Description                                     |
+| --------------------- | ------------------------------------------- | ----------------------------------------------- |
+| `content`             | `string`                                    | Initial HTML content (optional)                 |
+| `onChange`            | `(content: string, editor: EditorInstance)` | Callback when content changes                   |
+| `onBlur`              | `(editor: EditorInstance) => void`          | Callback when editor loses focus                |
+| `onFocus`             | `(editor: EditorInstance) => void`          | Callback when editor gains focus                |
+| `onReady`             | `(editor: EditorInstance) => void`          | Callback when editor is mounted/ready           |
+| `config`              | `object`                                    | Optional toolbar configuration                  |
+| ├─ `showTextFormat`   | `boolean`                                   | Show bold/italic/underline menu                 |
+| ├─ `showInlineFormat` | `boolean`                                   | Show inline format options (sub/sup/etc)        |
+| ├─ `showAlignment`    | `boolean`                                   | Show alignment controls (left/center/right)     |
+| ├─ `showList`         | `boolean`                                   | Show bullet and numbered list                   |
+| ├─ `showInsert`       | `boolean`                                   | Show insert menu (image, link, video, equation) |
+| └─ `showCodeView`     | `boolean`                                   | Enable raw HTML/code view toggle                |
 
 > All `config` options are optional. If not provided, all toolbar menus are shown by default.
 
