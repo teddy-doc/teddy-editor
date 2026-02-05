@@ -47,6 +47,13 @@ const Editor: React.FC<EditorProps> = ({
     bulletList: false,
     numberedList: false,
   });
+  // Padding State (Default to ~40px)
+  const [pagePadding, setPagePadding] = useState({
+    top: 40,
+    right: 40,
+    bottom: 40,
+    left: 40,
+  });
   const [currentTextFormat, setCurrentTextFormat] = useState("p");
 
   // Custom History Hook
@@ -345,22 +352,37 @@ const Editor: React.FC<EditorProps> = ({
         <div className="flex flex-col gap-1 w-full max-w-4xl">
           {/* Top Ruler */}
           <div className="pl-6 select-none bg-gray-100 sticky top-0 z-10 pt-2">
-            <RulerTop />
+            <RulerTop
+              paddingLeft={pagePadding.left}
+              paddingRight={pagePadding.right}
+              onChange={({ left, right }) => setPagePadding(prev => ({ ...prev, left, right }))}
+            />
           </div>
 
           <div className="flex">
             {/* Left Ruler */}
-            <div className="pr-1 select-none pt-8 hidden sm:block h-full">
-              <RulerLeft />
+            <div className="pr-1 select-none pt-0 hidden sm:block h-full relative">
+              {/* Adjust top offset to match page content start? The page has padding-top inside.
+                   The ruler starts at top of PAGE container.
+               */}
+              <RulerLeft
+                paddingTop={pagePadding.top}
+                paddingBottom={pagePadding.bottom}
+                onChange={({ top, bottom }) => setPagePadding(prev => ({ ...prev, top, bottom }))}
+              />
             </div>
 
             {/* Editor Page */}
             <div
               ref={editorRef}
               contentEditable
-              className="document-page outline-none focus:ring-0 prose prose-headings:mt-4 prose-headings:mb-2 w-full bg-white shadow-sm p-8 min-h-[1000px]"
+              className="document-page outline-none focus:ring-0 prose prose-headings:mt-4 prose-headings:mb-2 w-full bg-white shadow-sm min-h-[1123px]"
               style={{
                 whiteSpace: "pre-wrap",
+                paddingTop: `${pagePadding.top}px`,
+                paddingRight: `${pagePadding.right}px`,
+                paddingBottom: `${pagePadding.bottom}px`,
+                paddingLeft: `${pagePadding.left}px`,
               }}
               onMouseUp={updateActiveFormats}
               onKeyUp={updateActiveFormats}
