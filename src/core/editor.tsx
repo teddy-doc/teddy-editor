@@ -1,10 +1,10 @@
-import React from "react";
-import { ChevronDown, Code } from "lucide-react";
-import { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
+import { Code, ChevronDown } from "lucide-react";
+import FloatingToolbar from "./floating-toolbar";
+import EditorInsert from "./editor-insert";
 import EditorInlineFormat from "./editor-inline-format";
 import EditorInlineAlignment from "./editor-inline-alignment";
 import EditorList from "./editor-list";
-import EditorInsert from "./editor-insert";
 
 interface EditorProps {
   content?: string;
@@ -53,16 +53,6 @@ const Editor: React.FC<EditorProps> = ({
   const [isCodeView, setIsCodeView] = useState(false);
   const [htmlContent, setHtmlContent] = useState(content);
 
-  const textFormats = [
-    { value: "p", label: "Paragraph", tag: "p" },
-    { value: "h1", label: "Heading 1", tag: "h1" },
-    { value: "h2", label: "Heading 2", tag: "h2" },
-    { value: "h3", label: "Heading 3", tag: "h3" },
-    { value: "h4", label: "Heading 4", tag: "h4" },
-    { value: "h5", label: "Heading 5", tag: "h5" },
-    { value: "h6", label: "Heading 6", tag: "h6" },
-  ];
-
   const applyTextFormat = (tagName: string) => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
@@ -109,7 +99,6 @@ const Editor: React.FC<EditorProps> = ({
 
       // Update current format
       setCurrentTextFormat(tagName);
-      setIsDropdownOpen(false);
 
       // Restore selection
       const newRange = document.createRange();
@@ -146,7 +135,6 @@ const Editor: React.FC<EditorProps> = ({
 
       // Update current format
       setCurrentTextFormat(tagName);
-      setIsDropdownOpen(false);
     }
 
     // Update active formats after a short delay
@@ -342,151 +330,169 @@ const Editor: React.FC<EditorProps> = ({
   }, []);
 
   const getButtonClass = (isActive: boolean) => {
-    return `p-2 rounded transition-colors ${
-      isActive
-        ? "bg-blue-500 text-white hover:bg-blue-600"
-        : "hover:bg-gray-200"
-    }`;
+    return `p-2 rounded transition-colors ${isActive
+      ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
+      : "text-gray-600 hover:bg-gray-100"
+      }`;
   };
 
   const Divider = () => <div className="w-px h-6 bg-gray-300 mx-1" />;
 
+  const textFormats = [
+    { value: "p", label: "Paragraph", tag: "p" },
+    { value: "h1", label: "Heading 1", tag: "h1" },
+    { value: "h2", label: "Heading 2", tag: "h2" },
+    { value: "h3", label: "Heading 3", tag: "h3" },
+    { value: "h4", label: "Heading 4", tag: "h4" },
+    { value: "h5", label: "Heading 5", tag: "h5" },
+    { value: "h6", label: "Heading 6", tag: "h6" },
+  ];
+
   return (
-    <div className="w-full max-w-4xl mx-auto p-4">
-      {/* Toolbar */}
-      <div className="flex items-center gap-1 p-2 border border-gray-300 rounded-t-lg bg-gray-50">
-        {/* Text Format Dropdown */}
-        {config.showTextFormat && (
-          <>
-            <div className="relative">
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded hover:bg-gray-100 min-w-[120px] justify-between"
-                disabled={isCodeView}
-              >
-                <span className="text-sm">
-                  {textFormats.find((f) => f.value === currentTextFormat)
-                    ?.label || "Paragraph"}
-                </span>
-                <ChevronDown size={14} />
-              </button>
+    <div className="teddy-editor w-full min-h-screen bg-gray-100 flex flex-col items-center pb-8 relative">
+      {/* Fixed Top Toolbar */}
+      {!isCodeView && (
+        <div className="sticky top-0 z-40 w-full bg-white border-b border-gray-200 shadow-sm px-4 py-2 flex items-center justify-center">
+          <div className="flex flex-wrap items-center justify-center gap-1 max-w-5xl mx-auto w-full">
 
-              {isDropdownOpen && !isCodeView && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 min-w-[120px]">
-                  {textFormats.map((format) => (
-                    <button
-                      key={format.value}
-                      onClick={() => applyTextFormat(format.tag)}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 ${
-                        currentTextFormat === format.value
-                          ? "bg-blue-50 text-blue-600"
-                          : ""
-                      }`}
-                    >
-                      {format.label}
-                    </button>
-                  ))}
+            {/* Text Format Dropdown */}
+            {config.showTextFormat && (
+              <>
+                <div className="relative">
+                  <button
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded min-w-[130px] justify-between transition-colors"
+                  >
+                    <span className="font-medium">
+                      {textFormats.find((f) => f.value === currentTextFormat)?.label || "Paragraph"}
+                    </span>
+                    <ChevronDown size={14} className="text-gray-500" />
+                  </button>
+
+                  {isDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[160px] max-h-[300px] overflow-y-auto w-full">
+                      {textFormats.map((format) => (
+                        <button
+                          key={format.value}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            applyTextFormat(format.tag);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${currentTextFormat === format.value
+                            ? "bg-blue-50 text-blue-600 font-medium"
+                            : "text-gray-700"
+                            }`}
+                        >
+                          {format.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <Divider />
-          </>
-        )}
+                <Divider />
+              </>
+            )}
 
-        {/* Font Style Group */}
-        {config.showInlineFormat && (
-          <>
-            <div className={isCodeView ? "opacity-50 pointer-events-none" : ""}>
-              <EditorInlineFormat
-                editorRef={editorRef}
-                activeFormats={{
-                  bold: activeFormats.bold,
-                  italic: activeFormats.italic,
-                  underline: activeFormats.underline,
-                  strikethrough: activeFormats.strikethrough,
-                }}
-                updateActiveFormats={updateActiveFormats}
-                getButtonClass={getButtonClass}
-              />
-            </div>
-            <Divider />
-          </>
-        )}
+            {/* Font Style Group */}
+            {config.showInlineFormat && (
+              <>
+                <EditorInlineFormat
+                  editorRef={editorRef}
+                  activeFormats={{
+                    bold: activeFormats.bold,
+                    italic: activeFormats.italic,
+                    underline: activeFormats.underline,
+                    strikethrough: activeFormats.strikethrough,
+                  }}
+                  updateActiveFormats={updateActiveFormats}
+                  getButtonClass={getButtonClass}
+                />
+                <Divider />
+              </>
+            )}
 
-        {/* Alignment Group */}
-        {config.showAlignment && (
-          <>
-            <div className={isCodeView ? "opacity-50 pointer-events-none" : ""}>
-              <EditorInlineAlignment
-                activeFormats={{
-                  alignLeft: activeFormats.alignLeft,
-                  alignCenter: activeFormats.alignCenter,
-                  alignRight: activeFormats.alignRight,
-                  alignJustify: activeFormats.alignJustify,
-                }}
-                updateActiveFormats={updateActiveFormats}
-                getButtonClass={getButtonClass}
-              />
-            </div>
-            <Divider />
-          </>
-        )}
+            {/* Alignment Group */}
+            {config.showAlignment && (
+              <>
+                <EditorInlineAlignment
+                  activeFormats={{
+                    alignLeft: activeFormats.alignLeft,
+                    alignCenter: activeFormats.alignCenter,
+                    alignRight: activeFormats.alignRight,
+                    alignJustify: activeFormats.alignJustify,
+                  }}
+                  updateActiveFormats={updateActiveFormats}
+                  getButtonClass={getButtonClass}
+                />
+                <Divider />
+              </>
+            )}
 
-        {/* List Style Group */}
-        {config.showList && (
-          <>
-            <div className={isCodeView ? "opacity-50 pointer-events-none" : ""}>
-              <EditorList
-                editorRef={editorRef}
-                activeFormats={{
-                  bulletList: activeFormats.bulletList,
-                  numberedList: activeFormats.numberedList,
-                }}
-                updateActiveFormats={updateActiveFormats}
-                getButtonClass={getButtonClass}
-              />
-            </div>
-            <Divider />
-          </>
-        )}
+            {/* List Style Group */}
+            {config.showList && (
+              <>
+                <EditorList
+                  editorRef={editorRef}
+                  activeFormats={{
+                    bulletList: activeFormats.bulletList,
+                    numberedList: activeFormats.numberedList,
+                  }}
+                  updateActiveFormats={updateActiveFormats}
+                  getButtonClass={getButtonClass}
+                />
+                <Divider />
+              </>
+            )}
 
-        {/* Insert Group */}
-        {config.showInsert && (
-          <>
-            <div className={isCodeView ? "opacity-50 pointer-events-none" : ""}>
-              <EditorInsert />
-            </div>
-            <Divider />
-          </>
-        )}
+            {/* Insert Group */}
+            {config.showInsert && (
+              <>
+                <EditorInsert />
+                <Divider />
+              </>
+            )}
 
-        {/* Code View Toggle */}
-        {config.showCodeView && (
-          <button
-            onClick={toggleCodeView}
-            className={getButtonClass(isCodeView)}
-            title={isCodeView ? "Switch to Visual View" : "Switch to Code View"}
-          >
-            <Code size={16} />
-          </button>
-        )}
-      </div>
+            {/* Code View Toggle */}
+            {config.showCodeView && (
+              <button
+                onClick={toggleCodeView}
+                className={getButtonClass(isCodeView)}
+                title={isCodeView ? "Switch to Visual View" : "Switch to Code View"}
+              >
+                <Code size={18} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
-      {/* Editor */}
+      {/* Floating Toolbar (appears on selection) */}
+      {!isCodeView && (
+        <FloatingToolbar
+          editorRef={editorRef}
+          activeFormats={activeFormats}
+          currentTextFormat={currentTextFormat}
+          updateActiveFormats={updateActiveFormats}
+          applyTextFormat={applyTextFormat}
+        />
+      )}
+
+      {/* Editor Page */}
       <div
         ref={editorRef}
         contentEditable={!isCodeView}
-        className={`overflow-auto w-full p-4 border border-gray-300 border-t-0 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-          isCodeView
-            ? "font-mono text-sm bg-gray-50 whitespace-pre-wrap"
-            : "prose prose-headings:mt-0 prose-headings:mb-2"
-        }`}
+        className={`document-page outline-none focus:ring-0 ${isCodeView
+          ? "font-mono text-sm bg-gray-50 whitespace-pre-wrap !p-8"
+          : "prose prose-headings:mt-4 prose-headings:mb-2"
+          }`}
         style={{
           whiteSpace: isCodeView ? "pre-wrap" : "pre-wrap",
+          marginTop: "2rem", // spacing from fixed header
+          minHeight: "1000px" // Ensure visual resemblance to A4
         }}
         onMouseUp={!isCodeView ? updateActiveFormats : undefined}
         onKeyUp={!isCodeView ? updateActiveFormats : undefined}
-        onClick={() => setIsDropdownOpen(false)}
         onInput={isCodeView ? handleCodeChange : handleContentChange}
         onBlur={handleBlur}
         onFocus={handleFocus}
