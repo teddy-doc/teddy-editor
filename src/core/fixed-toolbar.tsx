@@ -114,6 +114,7 @@ const FixedToolbar: React.FC<FixedToolbarProps> = ({
                                                 ? "bg-blue-50 text-blue-600 font-medium"
                                                 : "text-gray-700"
                                                 }`}
+                                            title={`Format as ${format.label}`}
                                         >
                                             <span className={
                                                 format.tag === 'p' ? '' :
