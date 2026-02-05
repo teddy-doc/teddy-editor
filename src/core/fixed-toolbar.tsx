@@ -1,9 +1,12 @@
 import React, { useState } from "react";
-import { Code, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import EditorInsert from "./editor-insert";
 import EditorInlineFormat from "./editor-inline-format";
 import EditorInlineAlignment from "./editor-inline-alignment";
 import EditorList from "./editor-list";
+import EditorHistory from "./editor-history";
+import EditorFont from "./editor-font";
+import EditorTable from "./editor-table";
 
 interface FixedToolbarProps {
     config: {
@@ -12,7 +15,6 @@ interface FixedToolbarProps {
         showAlignment?: boolean;
         showList?: boolean;
         showInsert?: boolean;
-        showCodeView?: boolean;
     };
     activeFormats: {
         bold: boolean;
@@ -29,8 +31,6 @@ interface FixedToolbarProps {
     currentTextFormat: string;
     updateActiveFormats: () => void;
     applyTextFormat: (tag: string) => void;
-    toggleCodeView: () => void;
-    isCodeView: boolean;
     editorRef: React.RefObject<HTMLDivElement | null>;
 }
 
@@ -40,8 +40,6 @@ const FixedToolbar: React.FC<FixedToolbarProps> = ({
     currentTextFormat,
     updateActiveFormats,
     applyTextFormat,
-    toggleCodeView,
-    isCodeView,
     editorRef,
 }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -56,18 +54,23 @@ const FixedToolbar: React.FC<FixedToolbarProps> = ({
     const Divider = () => <div className="w-px h-6 bg-gray-300 mx-1" />;
 
     const textFormats = [
-        { value: "p", label: "Paragraph", tag: "p" },
-        { value: "h1", label: "Heading 1", tag: "h1" },
-        { value: "h2", label: "Heading 2", tag: "h2" },
-        { value: "h3", label: "Heading 3", tag: "h3" },
-        { value: "h4", label: "Heading 4", tag: "h4" },
-        { value: "h5", label: "Heading 5", tag: "h5" },
-        { value: "h6", label: "Heading 6", tag: "h6" },
+        { value: "p", label: "Normal text", tag: "p" },
+        { value: "h1", label: "Title", tag: "h1" },
+        { value: "h2", label: "Subtitle", tag: "h2" },
+        { value: "h3", label: "Heading 1", tag: "h3" },
+        { value: "h4", label: "Heading 2", tag: "h4" },
+        { value: "h5", label: "Heading 3", tag: "h5" },
+        { value: "h6", label: "Heading 4", tag: "h6" },
     ];
 
     return (
         <div className="sticky top-0 z-40 w-full bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-center border">
-            <div className="flex flex-wrap items-center justify-center gap-1 max-w-5xl mx-auto w-full">
+            <div className="flex flex-wrap items-center justify-center gap-1 max-w-7xl mx-auto w-full">
+
+                {/* Undo / Redo */}
+                <EditorHistory getButtonClass={getButtonClass} />
+                <Divider />
+
                 {/* Text Format Dropdown */}
                 {config.showTextFormat && (
                     <>
@@ -77,9 +80,9 @@ const FixedToolbar: React.FC<FixedToolbarProps> = ({
                                 onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
                                 className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded min-w-[130px] justify-between transition-colors"
                             >
-                                <span className="font-medium">
+                                <span className="font-medium truncate max-w-[100px]">
                                     {textFormats.find((f) => f.value === currentTextFormat)
-                                        ?.label || "Paragraph"}
+                                        ?.label || "Normal text"}
                                 </span>
                                 <ChevronDown size={14} className="text-gray-500" />
                             </button>
@@ -98,7 +101,15 @@ const FixedToolbar: React.FC<FixedToolbarProps> = ({
                                                 : "text-gray-700"
                                                 }`}
                                         >
-                                            {format.label}
+                                            <span className={
+                                                format.tag === 'p' ? '' :
+                                                    format.tag === 'h1' ? 'text-2xl font-bold' :
+                                                        format.tag === 'h2' ? 'text-xl font-bold' :
+                                                            format.tag === 'h3' ? 'text-lg font-bold' :
+                                                                'font-bold'
+                                            }>
+                                                {format.label}
+                                            </span>
                                         </button>
                                     ))}
                                 </div>
@@ -108,7 +119,14 @@ const FixedToolbar: React.FC<FixedToolbarProps> = ({
                     </>
                 )}
 
-                {/* Font Style Group */}
+                {/* Font Controls */}
+                <EditorFont
+                    getButtonClass={getButtonClass}
+                    updateActiveFormats={updateActiveFormats}
+                />
+                <Divider />
+
+                {/* Inline Format Group */}
                 {config.showInlineFormat && (
                     <>
                         <EditorInlineFormat
@@ -163,20 +181,9 @@ const FixedToolbar: React.FC<FixedToolbarProps> = ({
                 {config.showInsert && (
                     <>
                         <EditorInsert />
-                        <Divider />
+                        <EditorTable getButtonClass={getButtonClass} />
                     </>
                 )}
-
-                {/* Code View Toggle */}
-                {/* {config.showCodeView && (
-                    <button
-                        onClick={toggleCodeView}
-                        className={getButtonClass(isCodeView)}
-                        title={isCodeView ? "Switch to Visual View" : "Switch to Code View"}
-                    >
-                        <Code size={18} />
-                    </button>
-                )} */}
             </div>
         </div>
     );

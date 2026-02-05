@@ -29,7 +29,6 @@ const Editor: React.FC<EditorProps> = ({
     showAlignment: true,
     showList: true,
     showInsert: true,
-    showCodeView: true,
   },
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -46,8 +45,7 @@ const Editor: React.FC<EditorProps> = ({
     numberedList: false,
   });
   const [currentTextFormat, setCurrentTextFormat] = useState("p");
-  const [isCodeView, setIsCodeView] = useState(false);
-  const [htmlContent, setHtmlContent] = useState(content);
+  // const [htmlContent, setHtmlContent] = useState(content);
 
   const applyTextFormat = (tagName: string) => {
     const selection = window.getSelection();
@@ -137,49 +135,17 @@ const Editor: React.FC<EditorProps> = ({
     setTimeout(() => updateActiveFormats(), 10);
   };
 
-  const toggleCodeView = () => {
-    if (!editorRef.current) return;
-
-    if (isCodeView) {
-      // Switch from code view to visual view
-      // Sanitize before switching back to visual
-      const cleanHtml = DOMPurify.sanitize(htmlContent);
-      editorRef.current.innerHTML = cleanHtml;
-      editorRef.current.contentEditable = "true";
-      setIsCodeView(false);
-    } else {
-      // Switch from visual view to code view
-      const currentHtml = editorRef.current.innerHTML;
-      setHtmlContent(currentHtml);
-      editorRef.current.contentEditable = "false";
-      editorRef.current.textContent = currentHtml;
-      setIsCodeView(true);
-    }
-  };
-
   const handleContentChange = () => {
     if (editorRef.current && onChange) {
-      const currentContent = isCodeView
-        ? editorRef.current.textContent || ""
-        : editorRef.current.innerHTML;
+      const currentContent = editorRef.current.innerHTML;
       onChange(currentContent);
-    }
-  };
-
-  const handleCodeChange = () => {
-    if (isCodeView && editorRef.current) {
-      const newContent = editorRef.current.textContent || "";
-      setHtmlContent(newContent);
-      if (onChange) {
-        onChange(newContent);
-      }
     }
   };
 
   const handleBlur = () => {
     if (onBlur) {
       if (editorRef.current) {
-        const newContent = editorRef.current.textContent || "";
+        const newContent = editorRef.current.innerHTML;
         onBlur(newContent);
       }
     }
@@ -196,15 +162,14 @@ const Editor: React.FC<EditorProps> = ({
     if (editorRef.current && content !== undefined) {
       // Sanitize initial content
       const cleanContent = DOMPurify.sanitize(content);
-
-      if (isCodeView) {
-        editorRef.current.textContent = cleanContent;
-      } else {
+      // Only update if content is different to avoid cursor jumping/loops
+      // but for initial load or external update we might need it
+      if (editorRef.current.innerHTML !== cleanContent) {
         editorRef.current.innerHTML = cleanContent;
       }
-      setHtmlContent(cleanContent);
+      // setHtmlContent(cleanContent);
     }
-  }, [content, isCodeView]);
+  }, [content]);
 
   const updateActiveFormats = () => {
     const selection = window.getSelection();
@@ -333,46 +298,36 @@ const Editor: React.FC<EditorProps> = ({
   return (
     <div className="teddy-editor w-full min-h-screen bg-gray-100 flex flex-col items-center pb-8 relative">
       {/* Fixed Top Toolbar */}
-      {!isCodeView && (
-        <FixedToolbar
-          config={config}
-          activeFormats={activeFormats}
-          currentTextFormat={currentTextFormat}
-          updateActiveFormats={updateActiveFormats}
-          applyTextFormat={applyTextFormat}
-          toggleCodeView={toggleCodeView}
-          isCodeView={isCodeView}
-          editorRef={editorRef}
-        />
-      )}
+      <FixedToolbar
+        config={config}
+        activeFormats={activeFormats}
+        currentTextFormat={currentTextFormat}
+        updateActiveFormats={updateActiveFormats}
+        applyTextFormat={applyTextFormat}
+        editorRef={editorRef}
+      />
 
       {/* Floating Toolbar (appears on selection) */}
-      {!isCodeView && (
-        <FloatingToolbar
-          editorRef={editorRef}
-          activeFormats={activeFormats}
-          currentTextFormat={currentTextFormat}
-          updateActiveFormats={updateActiveFormats}
-          applyTextFormat={applyTextFormat}
-        />
-      )}
+      <FloatingToolbar
+        editorRef={editorRef}
+        activeFormats={activeFormats}
+        currentTextFormat={currentTextFormat}
+        updateActiveFormats={updateActiveFormats}
+        applyTextFormat={applyTextFormat}
+      />
 
       {/* Editor Page */}
       <div
         ref={editorRef}
-        contentEditable={!isCodeView}
-        className={`document-page outline-none focus:ring-0 ${isCodeView
-          ? "font-mono text-sm bg-gray-50 whitespace-pre-wrap !p-8"
-          : "prose prose-headings:mt-4 prose-headings:mb-2"
-          }`}
+        contentEditable
+        className="document-page outline-none focus:ring-0 prose prose-headings:mt-4 prose-headings:mb-2 max-w-4xl mx-auto mt-8"
         style={{
-          whiteSpace: isCodeView ? "pre-wrap" : "pre-wrap",
-          // marginTop: "2rem", // spacing from fixed header
+          whiteSpace: "pre-wrap",
           minHeight: "1000px" // Ensure visual resemblance to A4
         }}
-        onMouseUp={!isCodeView ? updateActiveFormats : undefined}
-        onKeyUp={!isCodeView ? updateActiveFormats : undefined}
-        onInput={isCodeView ? handleCodeChange : handleContentChange}
+        onMouseUp={updateActiveFormats}
+        onKeyUp={updateActiveFormats}
+        onInput={handleContentChange}
         onBlur={handleBlur}
         onFocus={handleFocus}
       />
