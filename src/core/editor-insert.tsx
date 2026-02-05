@@ -788,6 +788,50 @@ const VideoPopup = ({
   );
 };
 
+const LATEX_SYMBOLS = {
+  "Common": [
+    { label: "+", code: "+" },
+    { label: "-", code: "-" },
+    { label: "=", code: "=" },
+    { label: "÷", code: "\\div" },
+    { label: "×", code: "\\times" },
+    { label: "≠", code: "\\neq" },
+    { label: "±", code: "\\pm" },
+    { label: "∞", code: "\\infty" },
+  ],
+  "Greek": [
+    { label: "α", code: "\\alpha" },
+    { label: "β", code: "\\beta" },
+    { label: "γ", code: "\\gamma" },
+    { label: "δ", code: "\\delta" },
+    { label: "θ", code: "\\theta" },
+    { label: "λ", code: "\\lambda" },
+    { label: "π", code: "\\pi" },
+    { label: "σ", code: "\\sigma" },
+    { label: "Δ", code: "\\Delta" },
+    { label: "Ω", code: "\\Omega" },
+  ],
+  "Operators": [
+    { label: "∑", code: "\\sum" },
+    { label: "∏", code: "\\prod" },
+    { label: "∫", code: "\\int" },
+    { label: "√", code: "\\sqrt{}" },
+    { label: "x/y", code: "\\frac{}{}" },
+    { label: "x^n", code: "^{}" },
+    { label: "x_n", code: "_{}" },
+  ],
+  "Relations": [
+    { label: "<", code: "<" },
+    { label: ">", code: ">" },
+    { label: "≤", code: "\\leq" },
+    { label: "≥", code: "\\geq" },
+    { label: "≈", code: "\\approx" },
+    { label: "∈", code: "\\in" },
+    { label: "→", code: "\\rightarrow" },
+    { label: "←", code: "\\leftarrow" },
+  ],
+};
+
 const EquationPopup = ({
   isOpen,
   onClose,
@@ -800,6 +844,8 @@ const EquationPopup = ({
   initialData?: { latex: string } | null;
 }) => {
   const [latex, setLatex] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [activeTab, setActiveTab] = useState<keyof typeof LATEX_SYMBOLS>("Common");
 
   useEffect(() => {
     if (isOpen && initialData) {
@@ -818,11 +864,37 @@ const EquationPopup = ({
     }
   };
 
+  const insertSymbol = (symbol: string) => {
+    if (!textareaRef.current) return;
+
+    const start = textareaRef.current.selectionStart;
+    const end = textareaRef.current.selectionEnd;
+    const text = latex;
+    const newText = text.substring(0, start) + symbol + text.substring(end);
+
+    setLatex(newText);
+
+    // Defer cursor update to allow react render
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        const newCursorPos = start + symbol.length;
+
+        // If symbol has braces like \sqrt{}, put cursor inside braces
+        if (symbol.endsWith("{}")) {
+          textareaRef.current.setSelectionRange(newCursorPos - 1, newCursorPos - 1);
+        } else {
+          textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+        }
+      }
+    }, 0);
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-96 max-w-full mx-4">
+      <div className="bg-white rounded-lg p-6 w-[500px] max-w-full mx-4 shadow-xl">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">
             {initialData ? "Edit Equation" : "Insert Equation (LaTeX)"}
@@ -834,12 +906,46 @@ const EquationPopup = ({
             <X size={20} />
           </button>
         </div>
+
+        {/* Symbol Toolbar */}
+        <div className="mb-4">
+          <div className="flex border-b border-gray-200 mb-2">
+            {(Object.keys(LATEX_SYMBOLS) as Array<keyof typeof LATEX_SYMBOLS>).map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setActiveTab(category)}
+                className={`px-3 py-1 text-xs font-medium focus:outline-none transition-colors ${activeTab === category
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
+                  }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+          <div className="grid grid-cols-8 gap-1 bg-gray-50 p-2 rounded max-h-32 overflow-y-auto">
+            {LATEX_SYMBOLS[activeTab].map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => insertSymbol(item.code)}
+                className="p-1 h-8 text-center text-sm bg-white border border-gray-200 rounded hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                title={item.code}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               LaTeX Expression
             </label>
             <textarea
+              ref={textareaRef}
               value={latex}
               onChange={(e) => setLatex(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"

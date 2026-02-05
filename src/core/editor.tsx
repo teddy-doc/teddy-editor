@@ -196,14 +196,49 @@ const Editor: React.FC<EditorProps> = ({
   // Initialize content when component mounts or content prop changes
   useEffect(() => {
     if (editorRef.current && content !== undefined) {
-      // Sanitize initial content
-      const cleanContent = DOMPurify.sanitize(content);
+      // Configure DOMPurify to allow specific tags and attributes for the editor
+      const cleanContent = DOMPurify.sanitize(content, {
+        ADD_TAGS: ["iframe", "img", "br"], // Ensure these are allowed
+        ADD_ATTR: [
+          "target",
+          "rel",
+          "data-latex", // For equations
+          "frameborder",
+          "allowfullscreen",
+          "sandbox", // For secure iframes
+          "allow",
+          "class",
+          "style",
+          "src",
+          "href",
+          "alt",
+          "width",
+          "height",
+        ],
+        // Ensure iframe sandbox is enforced if someone manually edits HTML
+        FORBID_TAGS: ["script", "style", "object", "embed", "form", "input", "button"],
+        FORBID_ATTR: ["onmouseover", "onload", "onclick", "onerror"],
+      });
+
+      // Hook to enforce security on links
+      DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+        // Enforce noopener noreferrer on target="_blank"
+        if (node.tagName === "A" && node.getAttribute("target") === "_blank") {
+          node.setAttribute("rel", "noopener noreferrer");
+        }
+        // Enforce sandbox on iframes
+        if (node.tagName === "IFRAME") {
+          const currentSandbox = node.getAttribute("sandbox");
+          if (!currentSandbox) {
+            node.setAttribute("sandbox", "allow-scripts allow-same-origin allow-presentation");
+          }
+        }
+      });
+
       // Only update if content is different to avoid cursor jumping/loops
-      // but for initial load or external update we might need it
       if (editorRef.current.innerHTML !== cleanContent) {
         editorRef.current.innerHTML = cleanContent;
       }
-      // setHtmlContent(cleanContent);
     }
   }, [content]);
 
