@@ -14715,23 +14715,8 @@ const lo = (r) => {
       }
     )
   ] });
-};
-function ho() {
-  return /* @__PURE__ */ b.jsx("div", { children: /* @__PURE__ */ b.jsx(
-    co,
-    {
-      content: "<p>Initial content</p>",
-      onChange: (r) => console.log("Content changed:", r),
-      onBlur: (r) => console.log("Editor lost focus. Content:", r.getContent()),
-      onFocus: (r) => {
-        console.log("Editor gained focus"), console.log("Current content:", r.getContent());
-      },
-      onReady: (r) => {
-        console.log("Editor is ready!"), r.getContent() || r.setContent("<p>Start typing...</p>");
-      }
-    }
-  ) });
-}
+}, ho = co;
 export {
-  ho as default
+  ho as TeddyEditor,
+  co as default
 };

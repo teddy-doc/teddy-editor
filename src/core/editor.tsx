@@ -13,7 +13,7 @@ export interface TeddyEditorInstance {
   // Future extension points
 }
 
-interface EditorProps {
+export interface EditorProps {
   content?: string;
   onChange?: (content: string, editor: TeddyEditorInstance) => void;
   onBlur?: (editor: TeddyEditorInstance) => void;

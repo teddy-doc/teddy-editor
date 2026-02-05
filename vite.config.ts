@@ -13,7 +13,7 @@ export default defineConfig({
   ],
   build: {
     lib: {
-      entry: "src/TeddyEditor.tsx",
+      entry: "src/index.ts",
       name: "TeddyEditor",
       fileName: (format) => `teddy-editor.${format}.js`,
     },

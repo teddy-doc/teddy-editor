@@ -1,6 +1,6 @@
 {
   "name": "teddy-editor",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "A lightweight WYSIWYG editor built with React and Tailwind CSS. Fully customizable, TypeScript-ready, and easy to integrate into any modern React application.",
   "author": "Yudono Putro Utomo <yudonoputro@gmail.com>",
   "license": "MIT",
@@ -31,7 +31,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && npm run build:css",
+    "build": "tsc -b && vite build && npm run build:css && tsc -p tsconfig.app.json --declaration --emitDeclarationOnly --outDir dist --noEmit false",
     "build:css": "tailwindcss -i ./src/style.css -o ./dist/style.css --minify",
     "lint": "eslint .",
     "preview": "vite preview"
