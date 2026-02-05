@@ -246,6 +246,11 @@ export const insertVideo = (embedUrl: string) => {
       iframe.className = "max-w-full rounded shadow-sm";
       iframe.setAttribute("frameborder", "0");
       iframe.setAttribute("allowfullscreen", "true");
+      // Security hardening: Sandbox the iframe
+      iframe.setAttribute(
+        "sandbox",
+        "allow-scripts allow-same-origin allow-presentation"
+      );
 
       editor.appendChild(iframe);
 
@@ -295,6 +300,11 @@ export const insertVideo = (embedUrl: string) => {
     iframe.className = "max-w-full rounded shadow-sm";
     iframe.setAttribute("frameborder", "0");
     iframe.setAttribute("allowfullscreen", "true");
+    // Security hardening: Sandbox the iframe
+    iframe.setAttribute(
+      "sandbox",
+      "allow-scripts allow-same-origin allow-presentation"
+    );
 
     range.deleteContents();
     range.insertNode(iframe);
@@ -573,6 +583,7 @@ const VideoPopup = ({
   initialData?: { src: string } | null;
 }) => {
   const [url, setUrl] = useState("");
+  const [error, setError] = useState("");
 
   // Populate fields when popup opens with existing data
   useEffect(() => {
@@ -581,9 +592,10 @@ const VideoPopup = ({
     } else if (isOpen && !initialData) {
       setUrl("");
     }
+    setError("");
   }, [isOpen, initialData]);
 
-  const convertToEmbedUrl = (inputUrl: string): string => {
+  const convertToEmbedUrl = (inputUrl: string): string | null => {
     // YouTube conversion
     const youtubeMatch = inputUrl.match(
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]+)/
@@ -598,17 +610,28 @@ const VideoPopup = ({
       return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
     }
 
-    // Return as-is if already an embed URL or unknown format
-    return inputUrl;
+    // Strict validation: Only allow known embed URLs if they are from YT/Vimeo domains
+    // This prevents generic iframe injection
+    if (inputUrl.includes("youtube.com/embed/") || inputUrl.includes("player.vimeo.com/video/")) {
+      return inputUrl;
+    }
+
+    return null;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
     if (url.trim()) {
       const embedUrl = convertToEmbedUrl(url.trim());
-      onInsert(embedUrl);
-      setUrl("");
-      onClose();
+      if (embedUrl) {
+        onInsert(embedUrl);
+        setUrl("");
+        onClose();
+      } else {
+        setError("Invalid URL. Only YouTube and Vimeo are supported for security.");
+      }
     }
   };
 
@@ -642,6 +665,7 @@ const VideoPopup = ({
               required
               autoFocus
             />
+            {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
             <p className="text-sm text-gray-500 mt-1">
               Supports YouTube, Vimeo, and direct embed URLs
             </p>
@@ -730,9 +754,9 @@ const EditorInsert: React.FC = () => {
         initialData={
           selectedElementData?.type === "link"
             ? {
-                url: selectedElementData.url,
-                text: selectedElementData.text,
-              }
+              url: selectedElementData.url,
+              text: selectedElementData.text,
+            }
             : null
         }
       />
@@ -747,9 +771,9 @@ const EditorInsert: React.FC = () => {
         initialData={
           selectedElementData?.type === "image"
             ? {
-                src: selectedElementData.src,
-                alt: selectedElementData.alt,
-              }
+              src: selectedElementData.src,
+              alt: selectedElementData.alt,
+            }
             : null
         }
       />
@@ -764,8 +788,8 @@ const EditorInsert: React.FC = () => {
         initialData={
           selectedElementData?.type === "video"
             ? {
-                src: selectedElementData.src,
-              }
+              src: selectedElementData.src,
+            }
             : null
         }
       />

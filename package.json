@@ -1,6 +1,6 @@
 {
   "name": "teddy-editor",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A lightweight WYSIWYG editor built with React and Tailwind CSS. Fully customizable, TypeScript-ready, and easy to integrate into any modern React application.",
   "author": "Yudono Putro Utomo <yudonoputro@gmail.com>",
   "license": "MIT",
@@ -41,6 +41,8 @@
     "react-dom": ">=17.0.0"
   },
   "dependencies": {
+    "@types/dompurify": "^3.0.5",
+    "dompurify": "^3.3.1",
     "lucide-react": "^0.523.0"
   },
   "devDependencies": {

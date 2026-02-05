@@ -20,12 +20,13 @@
 
 /* Document Page Layout */
 .teddy-editor .document-page {
-  max-width: 800px; /* A4-ish width or standard document width */
+  width: 100%;
   min-height: 1000px;
-  margin: 2rem auto;
-  padding: 4rem;
+  /* margin: 2rem auto; */
+  /* padding: 4rem; */
+  padding: 2rem;
   background-color: white;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  /* box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); */
   border: 1px solid #e5e7eb;
 }
 
