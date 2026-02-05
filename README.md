@@ -3,6 +3,8 @@
 **Teddy Editor** is a lightweight and customizable WYSIWYG editor built with **React**, **TypeScript**, and **Tailwind CSS**.  
 Easily integrate it into any React app and take full control over content editing behavior and toolbar visibility.
 
+![Teddy Editor Screenshot](./Screenshot.png)
+
 ---
 
 ## ✨ Features
