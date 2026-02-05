@@ -1,5 +1,6 @@
-import { Link, Image, Video, X } from "lucide-react";
+import { Link, Image, Video, X, Sigma } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import katex from "katex";
 
 // Store the selection globally to preserve it across popup interactions
 let savedSelection: Range | null = null;
@@ -59,6 +60,13 @@ const getSelectedElementData = () => {
         return {
           type: "video",
           src: el.getAttribute("src") || "",
+        };
+      }
+
+      if (tagName === "span" && el.classList.contains("math-tex")) {
+        return {
+          type: "equation",
+          latex: el.getAttribute("data-latex") || "",
         };
       }
     }
@@ -315,6 +323,95 @@ export const insertVideo = (embedUrl: string) => {
     newRange.collapse(true);
     selection.removeAllRanges();
     selection.addRange(newRange);
+  }
+
+  // Clear saved selection
+  savedSelection = null;
+};
+
+export const insertEquation = (latex: string) => {
+  // Restore the saved selection first
+  restoreSelection();
+
+  try {
+    const html = katex.renderToString(latex, {
+      throwOnError: false,
+    });
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      // If no selection, insert at the end of the editor
+      const editor = document.querySelector(
+        '[contenteditable="true"]'
+      ) as HTMLElement;
+      if (editor) {
+        const span = document.createElement("span");
+        span.className = "math-tex inline-block px-1 select-none bg-gray-50 rounded border border-transparent hover:border-blue-300 cursor-pointer";
+        span.contentEditable = "false";
+        span.setAttribute("data-latex", latex);
+        span.innerHTML = html;
+
+        editor.appendChild(span);
+
+        // Add a space after
+        const space = document.createTextNode(" ");
+        editor.appendChild(space);
+
+        // Set cursor after
+        const range = document.createRange();
+        range.setStartAfter(space);
+        range.collapse(true);
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
+      return;
+    }
+
+    const range = selection.getRangeAt(0);
+
+    // Check if we're editing an existing equation
+    let eqElement = null;
+    let current = range.commonAncestorContainer;
+
+    // Find existing equation element
+    while (current && current !== document.body) {
+      if (
+        current.nodeType === Node.ELEMENT_NODE &&
+        (current as HTMLElement).tagName.toLowerCase() === "span" &&
+        (current as HTMLElement).classList.contains("math-tex")
+      ) {
+        eqElement = current as HTMLElement;
+        break;
+      }
+      current = current.parentNode as Node;
+    }
+
+    if (eqElement) {
+      // Update existing
+      eqElement.setAttribute("data-latex", latex);
+      eqElement.innerHTML = html;
+    } else {
+      // Create new
+      const span = document.createElement("span");
+      span.className = "math-tex inline-block px-1 select-none bg-gray-50 rounded border border-transparent hover:border-blue-300 cursor-pointer";
+      span.contentEditable = "false";
+      span.setAttribute("data-latex", latex);
+      span.innerHTML = html;
+
+      range.deleteContents();
+      range.insertNode(span);
+
+      // Set cursor after
+      const newRange = document.createRange();
+      newRange.setStartAfter(span);
+      newRange.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+    }
+  } catch (e) {
+    console.error("KaTeX rendering error:", e);
   }
 
   // Clear saved selection
@@ -691,10 +788,96 @@ const VideoPopup = ({
   );
 };
 
+const EquationPopup = ({
+  isOpen,
+  onClose,
+  onInsert,
+  initialData,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onInsert: (latex: string) => void;
+  initialData?: { latex: string } | null;
+}) => {
+  const [latex, setLatex] = useState("");
+
+  useEffect(() => {
+    if (isOpen && initialData) {
+      setLatex(initialData.latex);
+    } else if (isOpen && !initialData) {
+      setLatex("");
+    }
+  }, [isOpen, initialData]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (latex.trim()) {
+      onInsert(latex.trim());
+      setLatex("");
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-96 max-w-full mx-4">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">
+            {initialData ? "Edit Equation" : "Insert Equation (LaTeX)"}
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              LaTeX Expression
+            </label>
+            <textarea
+              value={latex}
+              onChange={(e) => setLatex(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+              placeholder="e.g. E = mc^2"
+              rows={3}
+              required
+              autoFocus
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Supports standard LaTeX math syntax.
+            </p>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              {initialData ? "Update Equation" : "Insert Equation"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const EditorInsert: React.FC = () => {
   const [linkPopupOpen, setLinkPopupOpen] = useState(false);
   const [imagePopupOpen, setImagePopupOpen] = useState(false);
   const [videoPopupOpen, setVideoPopupOpen] = useState(false);
+  const [equationPopupOpen, setEquationPopupOpen] = useState(false);
   const [selectedElementData, setSelectedElementData] = useState<any>(null);
 
   const handleLinkClick = () => {
@@ -717,6 +900,50 @@ const EditorInsert: React.FC = () => {
     setSelectedElementData(elementData?.type === "video" ? elementData : null);
     setVideoPopupOpen(true);
   };
+
+  const handleEquationClick = () => {
+    saveSelection();
+    const elementData = getSelectedElementData();
+    setSelectedElementData(
+      elementData?.type === "equation" ? elementData : null
+    );
+    setEquationPopupOpen(true);
+  };
+
+  // Add click listener to editor to detect equation clicks for editing
+  useEffect(() => {
+    const handleEditorClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains("math-tex") || target.closest(".math-tex")) {
+        // Select the equation element
+        const eqElement = target.classList.contains("math-tex") ? target : target.closest(".math-tex") as HTMLElement;
+
+        // select it
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNode(eqElement as Node);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+
+        handleEquationClick();
+      }
+    };
+
+    // Attach to the editor content area (assuming class 'teddy-editor' or similar wrapper, 
+    // but better to attach to document or pass a ref. 
+    // For simplicity in this component, we attach to document but check if inside editor
+    const editor = document.querySelector('[contenteditable="true"]');
+    if (editor) {
+      editor.addEventListener("click", handleEditorClick as any);
+    }
+
+    return () => {
+      const editor = document.querySelector('[contenteditable="true"]');
+      if (editor) {
+        editor.removeEventListener("click", handleEditorClick as any);
+      }
+    }
+  }, []);
 
   return (
     <>
@@ -741,6 +968,13 @@ const EditorInsert: React.FC = () => {
           title="Insert Video"
         >
           <Video size={18} />
+        </button>
+        <button
+          onClick={handleEquationClick}
+          className="p-2 rounded transition-colors hover:bg-gray-200"
+          title="Insert Equation"
+        >
+          <Sigma size={18} />
         </button>
       </div>
 
@@ -789,6 +1023,22 @@ const EditorInsert: React.FC = () => {
           selectedElementData?.type === "video"
             ? {
               src: selectedElementData.src,
+            }
+            : null
+        }
+      />
+
+      <EquationPopup
+        isOpen={equationPopupOpen}
+        onClose={() => {
+          setEquationPopupOpen(false);
+          setSelectedElementData(null);
+        }}
+        onInsert={insertEquation}
+        initialData={
+          selectedElementData?.type === "equation"
+            ? {
+              latex: selectedElementData.latex,
             }
             : null
         }

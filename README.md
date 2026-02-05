@@ -12,6 +12,7 @@ Easily integrate it into any React app and take full control over content editin
 - 🔐 Full TypeScript support
 - 🧩 Controlled component with `onChange`, `onFocus`, and `onBlur` events
 - 🧰 Optional toolbar configuration
+- ✖️ LaTeX Equation Support (via KaTeX)
 - 🚀 Easy to integrate, easy to extend
 
 ---
@@ -56,19 +57,19 @@ function App() {
 
 ## 🧩 Props
 
-| Prop                  | Type                        | Description                                 |
-| --------------------- | --------------------------- | ------------------------------------------- |
-| `content`             | `string`                    | Initial HTML content (optional)             |
-| `onChange`            | `(content: string) => void` | Callback when content changes               |
-| `onBlur`              | `(content: string) => void` | Callback when editor loses focus            |
-| `onFocus`             | `() => void`                | Callback when editor gains focus            |
-| `config`              | `object`                    | Optional toolbar configuration              |
-| ├─ `showTextFormat`   | `boolean`                   | Show bold/italic/underline menu             |
-| ├─ `showInlineFormat` | `boolean`                   | Show inline format options (sub/sup/etc)    |
-| ├─ `showAlignment`    | `boolean`                   | Show alignment controls (left/center/right) |
-| ├─ `showList`         | `boolean`                   | Show bullet and numbered list               |
-| ├─ `showInsert`       | `boolean`                   | Show insert menu (image, link, etc)         |
-| └─ `showCodeView`     | `boolean`                   | Enable raw HTML/code view toggle            |
+| Prop                  | Type                        | Description                                     |
+| --------------------- | --------------------------- | ----------------------------------------------- |
+| `content`             | `string`                    | Initial HTML content (optional)                 |
+| `onChange`            | `(content: string) => void` | Callback when content changes                   |
+| `onBlur`              | `(content: string) => void` | Callback when editor loses focus                |
+| `onFocus`             | `() => void`                | Callback when editor gains focus                |
+| `config`              | `object`                    | Optional toolbar configuration                  |
+| ├─ `showTextFormat`   | `boolean`                   | Show bold/italic/underline menu                 |
+| ├─ `showInlineFormat` | `boolean`                   | Show inline format options (sub/sup/etc)        |
+| ├─ `showAlignment`    | `boolean`                   | Show alignment controls (left/center/right)     |
+| ├─ `showList`         | `boolean`                   | Show bullet and numbered list                   |
+| ├─ `showInsert`       | `boolean`                   | Show insert menu (image, link, video, equation) |
+| └─ `showCodeView`     | `boolean`                   | Enable raw HTML/code view toggle                |
 
 > All `config` options are optional. If not provided, all toolbar menus are shown by default.
 
